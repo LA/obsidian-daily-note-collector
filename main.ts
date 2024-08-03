@@ -29,16 +29,18 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 			this.app.vault.create(dailyNote, `- ${link}`);
 		} else {
 			this.app.vault
-				.read(dailyNoteFile)
-				.then((content) => {
+				.process(dailyNoteFile, (content) => {
 					if (content.includes(link)) {
-						return;
+						return content;
 					}
-					const newContent = content + `\n- ${link}`;
-					this.app.vault.modify(dailyNoteFile, newContent);
+					// if we are at the top of the page, do not add a newline
+					if (!content) {
+						return `- ${link}`;
+					}
+					return `${content}\n- ${link}`;
 				})
-				.catch(() => {
-					new Notice("Error updating daily note");
+				.catch((error) => {
+					new Notice("Daily Note Collector: ", error);
 				});
 		}
 	}
@@ -50,13 +52,29 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		if (!dailyNoteFile) {
 			return;
 		}
-		this.app.vault.read(dailyNoteFile).then((content) => {
-			const newContent = content.replace(
-				`- [[${this.removeExtension(file.path)}]]`,
-				""
-			);
-			this.app.vault.modify(dailyNoteFile, newContent);
-		});
+		const link = `[[${this.removeExtension(file.path)}]]`;
+		this.app.vault
+			.process(dailyNoteFile, (content) => {
+				if (!content.includes(link)) {
+					return content;
+				}
+				if (content.includes(`\n- ${link}`)) {
+					const newContent = content.replace(`\n- ${link}`, "");
+					return newContent;
+				}
+				if (content.includes(`- ${link}\n`)) {
+					const newContent = content.replace(`- ${link}\n`, "");
+					return newContent;
+				}
+				if (content.includes(`- ${link}`)) {
+					const newContent = content.replace(`- ${link}`, "");
+					return newContent;
+				}
+				return content;
+			})
+			.catch((error) => {
+				new Notice("Daily Note Collector: ", error);
+			});
 	}
 
 	onRenameFile(file: TAbstractFile, oldPath: string) {
