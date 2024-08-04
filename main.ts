@@ -40,7 +40,7 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 					return `${content}\n- ${link}`;
 				})
 				.catch((error) => {
-					new Notice("Daily Note Collector: ", error);
+					new Notice("Daily Note Collector Error: " + error);
 				});
 		}
 	}
@@ -73,7 +73,7 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 				return content;
 			})
 			.catch((error) => {
-				new Notice("Daily Note Collector: ", error);
+				new Notice("Daily Note Collector Error: " + error);
 			});
 	}
 
