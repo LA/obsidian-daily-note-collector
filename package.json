@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-daily-note-collector",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "This plugin adds links to new notes to your daily note.",
 	"main": "main.js",
 	"scripts": {
