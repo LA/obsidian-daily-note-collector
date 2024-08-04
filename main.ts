@@ -1,13 +1,13 @@
 import { Notice, Plugin, TAbstractFile, TFile } from "obsidian";
 
+const imageExtensions = ["png", "jpg", "jpeg", "gif", "svg", "bmp", "webp"];
+
 export default class DailyNoteCollectorPlugin extends Plugin {
 	async onload() {
-		this.registerEvent(
-			this.app.vault.on("create", this.onCreateFile.bind(this))
-		);
+		// Rename event handler is not needed as long as files auto-update all links when renamed.
 
 		this.registerEvent(
-			this.app.vault.on("rename", this.onRenameFile.bind(this))
+			this.app.vault.on("create", this.onCreateFile.bind(this))
 		);
 
 		this.registerEvent(
@@ -19,7 +19,7 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 
 	onCreateFile(file: TAbstractFile) {
 		if (!(file instanceof TFile)) return;
-		const link = `[[${this.removeExtension(file.path)}]]`;
+		const link = this.getLink(file);
 		const { dailyNote } = this.getDailyNote();
 		if (file.path === dailyNote) {
 			return;
@@ -52,7 +52,7 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		if (!dailyNoteFile) {
 			return;
 		}
-		const link = `[[${this.removeExtension(file.path)}]]`;
+		const link = this.getLink(file);
 		this.app.vault
 			.process(dailyNoteFile, (content) => {
 				if (!content.includes(link)) {
@@ -77,26 +77,17 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 			});
 	}
 
-	onRenameFile(file: TAbstractFile, oldPath: string) {
-		/** Rename support is not necessary if you let Obsidian update existing links */
-		// if (!(file instanceof TFile)) return;
-		// const { dailyNote } = this.getDailyNote();
-		// const dailyNoteFile = this.app.vault.getFileByPath(dailyNote);
-		// if (!dailyNoteFile) {
-		// 	return;
-		// }
-		// this.app.vault.read(dailyNoteFile).then((content) => {
-		// 	const newContent = content.replace(
-		// 		`[[${this.removeExtension(oldPath)}]]`,
-		// 		`[[${this.removeExtension(file.path)}]]`
-		// 	);
-		// 	this.app.vault.modify(dailyNoteFile, newContent);
-		// });
-	}
+	getLink(file: TFile) {
+		const isMarkdown = file.extension === "md";
+		const imageSuffix = imageExtensions.includes(file.extension)
+			? "|50"
+			: "";
 
-	removeExtension(path: string) {
-		const split = path.split(".");
-		return split.slice(0, split.length - 1).join("");
+		const markdownLink = `[[${file.basename}]]`;
+		// Use full path for non-markdown files
+		const documentLink = `![[${file.path}${imageSuffix}]]`;
+
+		return isMarkdown ? markdownLink : documentLink;
 	}
 
 	getDailyNote() {
