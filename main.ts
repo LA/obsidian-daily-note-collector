@@ -7,19 +7,21 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		// Rename event handler is not needed as long as files auto-update all links when renamed.
 
 		this.registerEvent(
-			this.app.vault.on("create", this.onCreateFile.bind(this))
-		);
-
-		this.registerEvent(
 			this.app.vault.on("delete", this.onDeleteFile.bind(this))
 		);
+
+		this.app.workspace.onLayoutReady(() => {
+			this.registerEvent(
+				this.app.vault.on("create", this.onCreateFile.bind(this))
+			);
+		});
 	}
 
 	onunload() {}
 
 	onCreateFile(file: TAbstractFile) {
 		if (!(file instanceof TFile)) return;
-		const link = this.getLink(file);
+		const link = this.app.fileManager.generateMarkdownLink(file, "");
 		const { dailyNote } = this.getDailyNote();
 		if (file.path === dailyNote) {
 			return;
@@ -52,7 +54,7 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		if (!dailyNoteFile) {
 			return;
 		}
-		const link = this.getLink(file);
+		const link = this.app.fileManager.generateMarkdownLink(file, "");
 		this.app.vault
 			.process(dailyNoteFile, (content) => {
 				if (!content.includes(link)) {
@@ -75,19 +77,6 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 			.catch((error) => {
 				new Notice("Daily Note Collector Error: " + error);
 			});
-	}
-
-	getLink(file: TFile) {
-		const isMarkdown = file.extension === "md";
-		const imageSuffix = imageExtensions.includes(file.extension)
-			? "|50"
-			: "";
-
-		const markdownLink = `[[${file.basename}]]`;
-		// Use full path for non-markdown files
-		const documentLink = `![[${file.path}${imageSuffix}]]`;
-
-		return isMarkdown ? markdownLink : documentLink;
 	}
 
 	getDailyNote() {
