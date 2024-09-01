@@ -1,6 +1,10 @@
+import * as moment from "moment";
 import { Notice, Plugin, TAbstractFile, TFile } from "obsidian";
-
-const imageExtensions = ["png", "jpg", "jpeg", "gif", "svg", "bmp", "webp"];
+import {
+	createDailyNote,
+	getAllDailyNotes,
+	getDailyNote,
+} from "obsidian-daily-notes-interface";
 
 export default class DailyNoteCollectorPlugin extends Plugin {
 	async onload() {
@@ -23,15 +27,11 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		if (!(file instanceof TFile)) return;
 		const link = this.app.fileManager.generateMarkdownLink(file, "");
 		const { dailyNote } = this.getDailyNote();
-		if (file.path === dailyNote) {
-			return;
-		}
-		const dailyNoteFile = this.app.vault.getFileByPath(dailyNote);
-		if (!dailyNoteFile) {
-			this.app.vault.create(dailyNote, `- ${link}`);
+		if (!dailyNote) {
+			createDailyNote(moment());
 		} else {
 			this.app.vault
-				.process(dailyNoteFile, (content) => {
+				.process(dailyNote, (content) => {
 					if (content.includes(link)) {
 						return content;
 					}
@@ -50,13 +50,12 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 	onDeleteFile(file: TAbstractFile) {
 		if (!(file instanceof TFile)) return;
 		const { dailyNote } = this.getDailyNote();
-		const dailyNoteFile = this.app.vault.getFileByPath(dailyNote);
-		if (!dailyNoteFile) {
+		if (!dailyNote) {
 			return;
 		}
 		const link = this.app.fileManager.generateMarkdownLink(file, "");
 		this.app.vault
-			.process(dailyNoteFile, (content) => {
+			.process(dailyNote, (content) => {
 				if (!content.includes(link)) {
 					return content;
 				}
@@ -80,12 +79,8 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 	}
 
 	getDailyNote() {
-		const date = new Date();
-		const year = date.getFullYear();
-		const month = (date.getMonth() + 1).toString().padStart(2, "0");
-		const day = date.getDate().toString().padStart(2, "0");
-		const dateKey = `${year}-${month}-${day}`;
-		const dailyNote = `${dateKey}.md`;
+		const allNotes = getAllDailyNotes();
+		const dailyNote = getDailyNote(moment(), allNotes);
 		return {
 			dailyNote,
 		};
