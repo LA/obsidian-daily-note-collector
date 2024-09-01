@@ -11,3 +11,4 @@ Created by [Github/@LA](https://github.com/LA)
 For testing / development:
 
 -   Create a test vault at `~/plugin_test` for example.
+-   Install the plugin at `~/plugin_test/.obsidian/plugins/obsidian-daily-note-collector`
