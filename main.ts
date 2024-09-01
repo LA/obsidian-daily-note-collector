@@ -1,4 +1,3 @@
-import * as moment from "moment";
 import { Notice, Plugin, TAbstractFile, TFile } from "obsidian";
 import {
 	createDailyNote,
@@ -28,7 +27,7 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		const link = this.app.fileManager.generateMarkdownLink(file, "");
 		const { dailyNote } = this.getDailyNote();
 		if (!dailyNote) {
-			createDailyNote(moment());
+			createDailyNote(window.moment());
 		} else {
 			this.app.vault
 				.process(dailyNote, (content) => {
@@ -80,7 +79,7 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 
 	getDailyNote() {
 		const allNotes = getAllDailyNotes();
-		const dailyNote = getDailyNote(moment(), allNotes);
+		const dailyNote = getDailyNote(window.moment(), allNotes);
 		return {
 			dailyNote,
 		};
