@@ -29,6 +29,9 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		if (!dailyNote) {
 			createDailyNote(window.moment());
 		} else {
+			if (file.path === dailyNote.path) {
+				return;
+			}
 			this.app.vault
 				.process(dailyNote, (content) => {
 					if (content.includes(link)) {
