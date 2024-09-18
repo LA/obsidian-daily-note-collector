@@ -32,9 +32,6 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		promise
 			.then((dailyNote) => {
 				if (file.path === dailyNote.path) {
-					console.log(
-						"Not creating link to daily note in daily note"
-					);
 					return;
 				}
 				return this.app.vault.process(dailyNote, (content) => {
