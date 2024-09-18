@@ -26,14 +26,18 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		if (!(file instanceof TFile)) return;
 		const link = this.app.fileManager.generateMarkdownLink(file, "");
 		const { dailyNote } = this.getDailyNote();
-		if (!dailyNote) {
-			createDailyNote(window.moment());
-		} else {
-			if (file.path === dailyNote.path) {
-				return;
-			}
-			this.app.vault
-				.process(dailyNote, (content) => {
+		const promise = !dailyNote
+			? createDailyNote(window.moment())
+			: Promise.resolve(dailyNote);
+		promise
+			.then((dailyNote) => {
+				if (file.path === dailyNote.path) {
+					console.log(
+						"Not creating link to daily note in daily note"
+					);
+					return;
+				}
+				return this.app.vault.process(dailyNote, (content) => {
 					if (content.includes(link)) {
 						return content;
 					}
@@ -42,11 +46,11 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 						return `- ${link}`;
 					}
 					return `${content}\n- ${link}`;
-				})
-				.catch((error) => {
-					new Notice("Daily Note Collector Error: " + error);
 				});
-		}
+			})
+			.catch((error) => {
+				new Notice("Daily Note Collector Error: " + error);
+			});
 	}
 
 	onDeleteFile(file: TAbstractFile) {
