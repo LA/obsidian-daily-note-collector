@@ -15,5 +15,5 @@ export const DEFAULT_SETTINGS: DailyNoteCollectorPluginSettings = {
 	collectAudio: true,
 	collectVideos: true,
 	collectExcalidraw: true,
-	collectOther: false,
+	collectOther: true,
 };
