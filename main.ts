@@ -47,7 +47,7 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		if (extension === "md" && settings.collectMarkdown) {
 			return true;
 		} else if (
-			["png", "jpg", "jpeg", "gif", "webp"].includes(extension) &&
+			["png", "jpg", "jpeg", "gif", "webp", "svg", "heic", "heif"].includes(extension) &&
 			settings.collectImages
 		) {
 			return true;
