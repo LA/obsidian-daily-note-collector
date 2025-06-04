@@ -1,7 +1,7 @@
 {
 	"id": "daily-note-collector",
 	"name": "Daily Note Collector",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"minAppVersion": "1.6.7",
 	"description": "Adds links to new notes to your daily note.",
 	"author": "Adar Butel",
