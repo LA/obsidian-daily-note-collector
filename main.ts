@@ -44,8 +44,27 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		const extension = file.extension.toLowerCase();
 		const { settings } = this;
 
-		if (extension === "md" && settings.collectMarkdown) {
-			return true;
+		// Check exclude pattern first
+		if (settings.excludePattern) {
+			try {
+				const regex = new RegExp(settings.excludePattern);
+				if (regex.test(file.path)) {
+					return false;
+				}
+			} catch (e) {
+				// Invalid regex, ignore
+			}
+		}
+
+		// Check if this is an Excalidraw markdown file (.excalidraw.md)
+		const isExcalidrawMd = file.name.toLowerCase().endsWith(".excalidraw.md");
+
+		if (extension === "md") {
+			if (isExcalidrawMd) {
+				// Treat .excalidraw.md files according to Excalidraw setting
+				return settings.collectExcalidraw;
+			}
+			return settings.collectMarkdown;
 		} else if (
 			["png", "jpg", "jpeg", "gif", "webp", "svg", "heic", "heif"].includes(extension) &&
 			settings.collectImages
@@ -87,7 +106,13 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 			return;
 		}
 
-		const link = this.app.fileManager.generateMarkdownLink(file, "");
+		let link = this.app.fileManager.generateMarkdownLink(file, "");
+
+		// Convert embedded link to regular link if setting is disabled
+		if (!this.settings.useEmbeddedLinks && link.startsWith("!")) {
+			link = link.substring(1);
+		}
+
 		const { dailyNote } = this.getDailyNote();
 		const promise = !dailyNote
 			? createDailyNote(window.moment())
@@ -102,16 +127,61 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 					if (content.includes(link)) {
 						return content;
 					}
-					// if we are at the top of the page, do not add a newline
-					if (!content) {
-						return `- ${link}`;
+
+					const linkLine = `- ${link}`;
+					const heading = this.settings.insertAfterHeading?.trim();
+
+					// If insert after heading is specified, try to insert there
+					if (heading) {
+						const headingPattern = new RegExp(`^(#{1,6}\\s+${this.escapeRegExp(heading)})\\s*$`, "m");
+						const match = content.match(headingPattern);
+
+						if (match && match.index !== undefined) {
+							const headingEnd = match.index + match[0].length;
+							const beforeHeading = content.substring(0, headingEnd);
+							const afterHeading = content.substring(headingEnd);
+
+							// Find where the next heading starts or end of content
+							const nextHeadingMatch = afterHeading.match(/\n#{1,6}\s+/);
+
+							if (nextHeadingMatch && nextHeadingMatch.index !== undefined) {
+								// Insert before the next heading
+								const insertPoint = nextHeadingMatch.index;
+								const sectionContent = afterHeading.substring(0, insertPoint);
+								const rest = afterHeading.substring(insertPoint);
+
+								// Check if section already has content
+								if (sectionContent.trim()) {
+									return beforeHeading + sectionContent.trimEnd() + "\n" + linkLine + rest;
+								} else {
+									return beforeHeading + "\n" + linkLine + rest;
+								}
+							} else {
+								// No next heading, append to end of section
+								if (afterHeading.trim()) {
+									return beforeHeading + afterHeading.trimEnd() + "\n" + linkLine;
+								} else {
+									return beforeHeading + "\n" + linkLine;
+								}
+							}
+						}
+						// Heading not found, fall through to default behavior
 					}
-					return `${content}\n- ${link}`;
+
+					// Default behavior: append at end
+					if (!content) {
+						return linkLine;
+					}
+					return `${content}\n${linkLine}`;
 				});
 			})
 			.catch((error) => {
 				new Notice("Daily Note Collector Error: " + error);
 			});
+	}
+
+	private escapeRegExp(string: string): string {
+		return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	}
 
 	onDeleteFile(file: TAbstractFile) {

@@ -189,5 +189,53 @@ export class DailyNoteCollectorSettingTab extends PluginSettingTab {
 						this.display();
 					});
 			});
+
+		containerEl.createEl("h3", { text: "Link Options" });
+
+		new Setting(containerEl)
+			.setName("Use Embedded Links")
+			.setDesc(
+				"When enabled, non-markdown files (images, PDFs, etc.) will be embedded using ![[file]] syntax. When disabled, regular [[file]] links will be used instead."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(settings.useEmbeddedLinks ?? true)
+					.onChange(async (value) => {
+						settings.useEmbeddedLinks = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Insert After Heading")
+			.setDesc(
+				"Specify a heading name (without #) to insert links after. Links will be added under this heading instead of at the end of the note. Leave empty to append at the end."
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("e.g., Daily Notes")
+					.setValue(settings.insertAfterHeading ?? "")
+					.onChange(async (value) => {
+						settings.insertAfterHeading = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		containerEl.createEl("h3", { text: "Exclusions" });
+
+		new Setting(containerEl)
+			.setName("Exclude Pattern")
+			.setDesc(
+				"Regular expression pattern to exclude files from being collected. Files matching this pattern will not be added to your daily note. Example: 'Templates/.*' to exclude files in Templates folder."
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("e.g., Templates/.*")
+					.setValue(settings.excludePattern ?? "")
+					.onChange(async (value) => {
+						settings.excludePattern = value;
+						await this.plugin.saveSettings();
+					})
+			);
 	}
 }
