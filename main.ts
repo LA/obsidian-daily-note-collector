@@ -129,43 +129,26 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 					}
 
 					const linkLine = `- ${link}`;
-					const heading = this.settings.insertAfterHeading?.trim();
+					const insertAfter = this.settings.insertAfterHeading?.trim();
 
-					// If insert after heading is specified, try to insert there
-					if (heading) {
-						const headingPattern = new RegExp(`^(#{1,6}\\s+${this.escapeRegExp(heading)})\\s*$`, "m");
-						const match = content.match(headingPattern);
+					// If insert after text is specified, try to insert there
+					if (insertAfter) {
+						const pattern = new RegExp(`^(.*${this.escapeRegExp(insertAfter)}.*)$`, "m");
+						const match = content.match(pattern);
 
 						if (match && match.index !== undefined) {
-							const headingEnd = match.index + match[0].length;
-							const beforeHeading = content.substring(0, headingEnd);
-							const afterHeading = content.substring(headingEnd);
+							const matchEnd = match.index + match[0].length;
+							const before = content.substring(0, matchEnd);
+							const after = content.substring(matchEnd);
 
-							// Find where the next heading starts or end of content
-							const nextHeadingMatch = afterHeading.match(/\n#{1,6}\s+/);
-
-							if (nextHeadingMatch && nextHeadingMatch.index !== undefined) {
-								// Insert before the next heading
-								const insertPoint = nextHeadingMatch.index;
-								const sectionContent = afterHeading.substring(0, insertPoint);
-								const rest = afterHeading.substring(insertPoint);
-
-								// Check if section already has content
-								if (sectionContent.trim()) {
-									return beforeHeading + sectionContent.trimEnd() + "\n" + linkLine + rest;
-								} else {
-									return beforeHeading + "\n" + linkLine + rest;
-								}
+							// Insert right after the matched line
+							if (after.startsWith("\n")) {
+								return before + "\n" + linkLine + after;
 							} else {
-								// No next heading, append to end of section
-								if (afterHeading.trim()) {
-									return beforeHeading + afterHeading.trimEnd() + "\n" + linkLine;
-								} else {
-									return beforeHeading + "\n" + linkLine;
-								}
+								return before + "\n" + linkLine + after;
 							}
 						}
-						// Heading not found, fall through to default behavior
+						// Pattern not found, fall through to default behavior
 					}
 
 					// Default behavior: append at end

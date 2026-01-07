@@ -207,13 +207,13 @@ export class DailyNoteCollectorSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Insert After Heading")
+			.setName("Insert After Text")
 			.setDesc(
-				"Specify a heading name (without #) to insert links after. Links will be added under this heading instead of at the end of the note. Leave empty to append at the end."
+				"Specify text to insert links after. Works with headings, bullet points, or any text. If the text appears multiple times, links are inserted after the first match. If the text is not found, links are appended at the end of the note. Note: links will appear in reverse chronological order (newest first) since each new link is inserted directly after the text. Leave empty to always append at the end."
 			)
 			.addText((text) =>
 				text
-					.setPlaceholder("e.g., Daily Notes")
+					.setPlaceholder("e.g., ## Daily Notes")
 					.setValue(settings.insertAfterHeading ?? "")
 					.onChange(async (value) => {
 						settings.insertAfterHeading = value;
