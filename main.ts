@@ -40,54 +40,75 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 
 	onunload() {}
 
-	private shouldCollectFile(file: TFile): boolean {
-		const extension = file.extension.toLowerCase();
+	private isExcludedByPattern(file: TFile): boolean {
 		const { settings } = this;
-
-		if (extension === "md" && settings.collectMarkdown) {
-			return true;
-		} else if (
-			["png", "jpg", "jpeg", "gif", "webp", "svg", "heic", "heif"].includes(extension) &&
-			settings.collectImages
-		) {
-			return true;
-		} else if (extension === "pdf" && settings.collectPdfs) {
-			return true;
-		} else if (
-			["mp3", "wav", "m4a"].includes(extension) &&
-			settings.collectAudio
-		) {
-			return true;
-		} else if (
-			["mp4", "mov", "avi"].includes(extension) &&
-			settings.collectVideos
-		) {
-			return true;
-		} else if (extension === "excalidraw" && settings.collectExcalidraw) {
-			return true;
-		} else if (settings.collectOther) {
-			const isSpecificKnownType =
-				extension === "md" ||
-				["png", "jpg", "jpeg", "gif"].includes(extension) ||
-				extension === "pdf" ||
-				["mp3", "wav", "m4a"].includes(extension) ||
-				["mp4", "mov", "avi"].includes(extension) ||
-				extension === "excalidraw";
-			if (!isSpecificKnownType) {
-				return true;
+		if (settings.excludePattern) {
+			try {
+				const regex = new RegExp(settings.excludePattern);
+				return regex.test(file.path);
+			} catch (e) {
+				// Invalid regex, ignore
 			}
 		}
 		return false;
 	}
 
+	/**
+	 * Returns null if file should be collected, or a string describing why it was excluded.
+	 */
+	private getExclusionReason(file: TFile): string | null {
+		const extension = file.extension.toLowerCase();
+		const { settings } = this;
+
+		// Check exclude pattern first
+		if (this.isExcludedByPattern(file)) {
+			return "Exclude Pattern";
+		}
+
+		// Check if this is an Excalidraw markdown file (.excalidraw.md)
+		const isExcalidrawMd = file.name.toLowerCase().endsWith(".excalidraw.md");
+
+		if (extension === "md") {
+			if (isExcalidrawMd) {
+				return settings.collectExcalidraw ? null : "Excalidraw disabled";
+			}
+			return settings.collectMarkdown ? null : "Markdown disabled";
+		} else if (["png", "jpg", "jpeg", "gif", "webp", "svg", "heic", "heif"].includes(extension)) {
+			return settings.collectImages ? null : "Images disabled";
+		} else if (extension === "pdf") {
+			return settings.collectPdfs ? null : "PDFs disabled";
+		} else if (["mp3", "wav", "m4a"].includes(extension)) {
+			return settings.collectAudio ? null : "Audio disabled";
+		} else if (["mp4", "mov", "avi"].includes(extension)) {
+			return settings.collectVideos ? null : "Videos disabled";
+		} else if (extension === "excalidraw") {
+			return settings.collectExcalidraw ? null : "Excalidraw disabled";
+		} else {
+			return settings.collectOther ? null : "Other files disabled";
+		}
+	}
+
 	onCreateFile(file: TAbstractFile) {
 		if (!(file instanceof TFile)) return;
 
-		if (!this.shouldCollectFile(file)) {
+		const exclusionReason = this.getExclusionReason(file);
+		if (exclusionReason) {
+			new Notice(`Daily Note Collector: "${file.name}" excluded (${exclusionReason})`);
 			return;
 		}
 
-		const link = this.app.fileManager.generateMarkdownLink(file, "");
+		let link = this.app.fileManager.generateMarkdownLink(file, "");
+		const isMarkdown = file.extension.toLowerCase() === "md";
+
+		// Handle embedded links for non-markdown files
+		if (!isMarkdown) {
+			if (this.settings.useEmbeddedLinks && !link.startsWith("!")) {
+				link = "!" + link;
+			} else if (!this.settings.useEmbeddedLinks && link.startsWith("!")) {
+				link = link.substring(1);
+			}
+		}
+
 		const { dailyNote } = this.getDailyNote();
 		const promise = !dailyNote
 			? createDailyNote(window.moment())
@@ -102,16 +123,44 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 					if (content.includes(link)) {
 						return content;
 					}
-					// if we are at the top of the page, do not add a newline
-					if (!content) {
-						return `- ${link}`;
+
+					const linkLine = `- ${link}`;
+					const insertAfter = this.settings.insertAfterHeading?.trim();
+
+					// If insert after text is specified, try to insert there
+					if (insertAfter) {
+						const pattern = new RegExp(`^(.*${this.escapeRegExp(insertAfter)}.*)$`, "m");
+						const match = content.match(pattern);
+
+						if (match && match.index !== undefined) {
+							const matchEnd = match.index + match[0].length;
+							const before = content.substring(0, matchEnd);
+							const after = content.substring(matchEnd);
+
+							// Insert right after the matched line
+							if (after.startsWith("\n")) {
+								return before + "\n" + linkLine + after;
+							} else {
+								return before + "\n" + linkLine + after;
+							}
+						}
+						// Pattern not found, fall through to default behavior
 					}
-					return `${content}\n- ${link}`;
+
+					// Default behavior: append at end
+					if (!content) {
+						return linkLine;
+					}
+					return `${content}\n${linkLine}`;
 				});
 			})
 			.catch((error) => {
 				new Notice("Daily Note Collector Error: " + error);
 			});
+	}
+
+	private escapeRegExp(string: string): string {
+		return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	}
 
 	onDeleteFile(file: TAbstractFile) {
