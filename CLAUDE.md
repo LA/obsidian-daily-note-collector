@@ -41,4 +41,4 @@ To release a new version:
 - **DailyNoteCollectorPluginSettings.ts** - Settings interface and defaults
 - **DailyNoteCollectorSettingTab.ts** - Settings UI using Obsidian's PluginSettingTab
 
-Key flow: `vault.on("create")` → `shouldCollectFile()` checks settings/patterns → generates link → appends to daily note (optionally under a specific heading)
+Key flow: `vault.on("create")` → `getExclusionReason()` checks settings/patterns → generates link → appends to daily note (optionally under a specific heading)

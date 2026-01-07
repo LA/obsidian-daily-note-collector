@@ -53,63 +53,47 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		return false;
 	}
 
-	private shouldCollectFile(file: TFile): boolean {
+	/**
+	 * Returns null if file should be collected, or a string describing why it was excluded.
+	 */
+	private getExclusionReason(file: TFile): string | null {
 		const extension = file.extension.toLowerCase();
 		const { settings } = this;
+
+		// Check exclude pattern first
+		if (this.isExcludedByPattern(file)) {
+			return "Exclude Pattern";
+		}
 
 		// Check if this is an Excalidraw markdown file (.excalidraw.md)
 		const isExcalidrawMd = file.name.toLowerCase().endsWith(".excalidraw.md");
 
 		if (extension === "md") {
 			if (isExcalidrawMd) {
-				// Treat .excalidraw.md files according to Excalidraw setting
-				return settings.collectExcalidraw;
+				return settings.collectExcalidraw ? null : "Excalidraw disabled";
 			}
-			return settings.collectMarkdown;
-		} else if (
-			["png", "jpg", "jpeg", "gif", "webp", "svg", "heic", "heif"].includes(extension) &&
-			settings.collectImages
-		) {
-			return true;
-		} else if (extension === "pdf" && settings.collectPdfs) {
-			return true;
-		} else if (
-			["mp3", "wav", "m4a"].includes(extension) &&
-			settings.collectAudio
-		) {
-			return true;
-		} else if (
-			["mp4", "mov", "avi"].includes(extension) &&
-			settings.collectVideos
-		) {
-			return true;
-		} else if (extension === "excalidraw" && settings.collectExcalidraw) {
-			return true;
-		} else if (settings.collectOther) {
-			const isSpecificKnownType =
-				extension === "md" ||
-				["png", "jpg", "jpeg", "gif"].includes(extension) ||
-				extension === "pdf" ||
-				["mp3", "wav", "m4a"].includes(extension) ||
-				["mp4", "mov", "avi"].includes(extension) ||
-				extension === "excalidraw";
-			if (!isSpecificKnownType) {
-				return true;
-			}
+			return settings.collectMarkdown ? null : "Markdown disabled";
+		} else if (["png", "jpg", "jpeg", "gif", "webp", "svg", "heic", "heif"].includes(extension)) {
+			return settings.collectImages ? null : "Images disabled";
+		} else if (extension === "pdf") {
+			return settings.collectPdfs ? null : "PDFs disabled";
+		} else if (["mp3", "wav", "m4a"].includes(extension)) {
+			return settings.collectAudio ? null : "Audio disabled";
+		} else if (["mp4", "mov", "avi"].includes(extension)) {
+			return settings.collectVideos ? null : "Videos disabled";
+		} else if (extension === "excalidraw") {
+			return settings.collectExcalidraw ? null : "Excalidraw disabled";
+		} else {
+			return settings.collectOther ? null : "Other files disabled";
 		}
-		return false;
 	}
 
 	onCreateFile(file: TAbstractFile) {
 		if (!(file instanceof TFile)) return;
 
-		// Check exclude pattern first and show notice
-		if (this.isExcludedByPattern(file)) {
-			new Notice(`Daily Note Collector: "${file.name}" excluded by pattern`);
-			return;
-		}
-
-		if (!this.shouldCollectFile(file)) {
+		const exclusionReason = this.getExclusionReason(file);
+		if (exclusionReason) {
+			new Notice(`Daily Note Collector: "${file.name}" excluded (${exclusionReason})`);
 			return;
 		}
 
