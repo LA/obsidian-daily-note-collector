@@ -107,10 +107,15 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 		}
 
 		let link = this.app.fileManager.generateMarkdownLink(file, "");
+		const isMarkdown = file.extension.toLowerCase() === "md";
 
-		// Convert embedded link to regular link if setting is disabled
-		if (!this.settings.useEmbeddedLinks && link.startsWith("!")) {
-			link = link.substring(1);
+		// Handle embedded links for non-markdown files
+		if (!isMarkdown) {
+			if (this.settings.useEmbeddedLinks && !link.startsWith("!")) {
+				link = "!" + link;
+			} else if (!this.settings.useEmbeddedLinks && link.startsWith("!")) {
+				link = link.substring(1);
+			}
 		}
 
 		const { dailyNote } = this.getDailyNote();
