@@ -40,21 +40,22 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 
 	onunload() {}
 
-	private shouldCollectFile(file: TFile): boolean {
-		const extension = file.extension.toLowerCase();
+	private isExcludedByPattern(file: TFile): boolean {
 		const { settings } = this;
-
-		// Check exclude pattern first
 		if (settings.excludePattern) {
 			try {
 				const regex = new RegExp(settings.excludePattern);
-				if (regex.test(file.path)) {
-					return false;
-				}
+				return regex.test(file.path);
 			} catch (e) {
 				// Invalid regex, ignore
 			}
 		}
+		return false;
+	}
+
+	private shouldCollectFile(file: TFile): boolean {
+		const extension = file.extension.toLowerCase();
+		const { settings } = this;
 
 		// Check if this is an Excalidraw markdown file (.excalidraw.md)
 		const isExcalidrawMd = file.name.toLowerCase().endsWith(".excalidraw.md");
@@ -101,6 +102,12 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 
 	onCreateFile(file: TAbstractFile) {
 		if (!(file instanceof TFile)) return;
+
+		// Check exclude pattern first and show notice
+		if (this.isExcludedByPattern(file)) {
+			new Notice(`Daily Note Collector: "${file.name}" excluded by pattern`);
+			return;
+		}
 
 		if (!this.shouldCollectFile(file)) {
 			return;

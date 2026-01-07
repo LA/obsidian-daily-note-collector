@@ -199,7 +199,7 @@ export class DailyNoteCollectorSettingTab extends PluginSettingTab {
 			)
 			.addToggle((toggle) =>
 				toggle
-					.setValue(settings.useEmbeddedLinks ?? true)
+					.setValue(settings.useEmbeddedLinks ?? false)
 					.onChange(async (value) => {
 						settings.useEmbeddedLinks = value;
 						await this.plugin.saveSettings();

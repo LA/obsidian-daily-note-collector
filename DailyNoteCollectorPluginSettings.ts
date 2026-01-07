@@ -19,7 +19,7 @@ export const DEFAULT_SETTINGS: DailyNoteCollectorPluginSettings = {
 	collectVideos: true,
 	collectExcalidraw: true,
 	collectOther: true,
-	useEmbeddedLinks: true,
+	useEmbeddedLinks: false,
 	excludePattern: "",
 	insertAfterHeading: "",
 };
