@@ -35,6 +35,9 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 			this.registerEvent(
 				this.app.vault.on("create", this.onCreateFile.bind(this))
 			);
+			this.registerEvent(
+				this.app.vault.on("modify", this.onModifyFile.bind(this))
+			);
 		});
 	}
 
@@ -90,10 +93,24 @@ export default class DailyNoteCollectorPlugin extends Plugin {
 
 	onCreateFile(file: TAbstractFile) {
 		if (!(file instanceof TFile)) return;
+		this.tryCollectFileToDailyNote(file, true);
+	}
+
+	onModifyFile(file: TAbstractFile) {
+		if (!(file instanceof TFile)) return;
+		if (!this.settings.addModifiedFileToDiary) return;
+		if (!window.moment(file.stat.mtime).isSame(window.moment(), "day")) return;
+
+		this.tryCollectFileToDailyNote(file, false);
+	}
+
+	private tryCollectFileToDailyNote(file: TFile, showExcludedNotice: boolean) {
 
 		const exclusionReason = this.getExclusionReason(file);
 		if (exclusionReason) {
-			new Notice(`Daily Note Collector: "${file.name}" excluded (${exclusionReason})`);
+			if (showExcludedNotice) {
+				new Notice(`Daily Note Collector: "${file.name}" excluded (${exclusionReason})`);
+			}
 			return;
 		}
 

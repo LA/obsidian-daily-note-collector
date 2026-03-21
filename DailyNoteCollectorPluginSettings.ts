@@ -6,6 +6,7 @@ export interface DailyNoteCollectorPluginSettings {
 	collectVideos: boolean;
 	collectExcalidraw: boolean;
 	collectOther: boolean;
+	addModifiedFileToDiary: boolean;
 	useEmbeddedLinks: boolean;
 	excludePattern: string;
 	insertAfterHeading: string;
@@ -19,6 +20,7 @@ export const DEFAULT_SETTINGS: DailyNoteCollectorPluginSettings = {
 	collectVideos: true,
 	collectExcalidraw: true,
 	collectOther: true,
+	addModifiedFileToDiary: false,
 	useEmbeddedLinks: false,
 	excludePattern: "",
 	insertAfterHeading: "",
