@@ -193,6 +193,20 @@ export class DailyNoteCollectorSettingTab extends PluginSettingTab {
 		containerEl.createEl("h3", { text: "Link Options" });
 
 		new Setting(containerEl)
+			.setName("Add Modified File To Diary")
+			.setDesc(
+				"When enabled, files modified today will also be added to the daily note."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(settings.addModifiedFileToDiary ?? false)
+					.onChange(async (value) => {
+						settings.addModifiedFileToDiary = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
 			.setName("Use Embedded Links")
 			.setDesc(
 				"When enabled, non-markdown files (images, PDFs, etc.) will be embedded using ![[file]] syntax. When disabled, regular [[file]] links will be used instead."
